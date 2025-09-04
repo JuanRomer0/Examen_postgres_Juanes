@@ -1,4 +1,4 @@
-🏪 Gestión de Inventario para una Tienda de Tecnología
+#🏪 Gestión de Inventario para una Tienda de Tecnología
 
 
 
@@ -44,7 +44,7 @@ El nuevo sistema deberá cumplir con las siguientes funcionalidades:
 
 
 
-Resultado esperado
+#Resultado esperado
 
 📌 Entregables del Examen
 Los estudiantes deben entregar un repositorio en GitHub, con su hash del último commit, con los siguientes archivos:
