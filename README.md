@@ -44,62 +44,270 @@ El nuevo sistema deberá cumplir con las siguientes funcionalidades:
 
 
 
-Resultado esperado
+# Resultado esperado
 
 📌 Entregables del Examen
 Los estudiantes deben entregar un repositorio en GitHub, con su hash del último commit, con los siguientes archivos:
 
-📄 1. Modelo E-R (modelo_er.png o modelo_er.jpg)
+## 📄 1. Modelo E-R (modelo_er.png o modelo_er.jpg)
 Un diagrama Entidad-Relación (E-R) con entidades, relaciones y cardinalidades bien definidas.
 El modelo debe estar normalizado hasta la 3FN para evitar redundancias.
+![1 Modelo E-R](https://github.com/user-attachments/assets/2007b381-570a-458e-b846-f5490ebdfd3f)
 
 
-📄 2. Estructura de la Base de Datos (db.sql)
+## 📄 2. Estructura de la Base de Datos (db.sql)
 Archivo SQL con la creación de todas las tablas.
 Uso de claves primarias y foráneas para asegurar integridad referencial.
 Aplicación de restricciones (NOT NULL, CHECK, UNIQUE).
 
+```sql
 
-📄 3. Inserción de Datos (insert.sql)
+===========SCRIPT DE CREACION DE LA BASE DE DATOS Y TABLAS============
+================================DML===================================
+
+CREATE DATABASE IF NOT EXIST examen_juanes;
+USE examen_juanes;
+
+CREATE TABLE IF NOT EXISTS productos (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  categoria TEXT NOT NULL,
+  precio NUMERIC(12,2) NOT NULL CHECK (precio >= 0),
+  stock INTEGER NOT NULL CHECK (stock >= 0),
+  proveedor_id INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS clientes (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  correo TEXT NOT NULL UNIQUE,
+  telefono TEXT,
+  estado TEXT NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo','inactivo'))
+);
+
+CREATE TABLE IF NOT EXISTS proveedores (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ventas (
+  id SERIAL PRIMARY KEY,
+  cliente_id INTEGER NOT NULL REFERENCES clientes(id),
+  fecha TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ventas_detalle (
+  id SERIAL PRIMARY KEY,
+  venta_id INTEGER NOT NULL REFERENCES ventas(id) ON DELETE CASCADE,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+  precio_unitario NUMERIC(12,2) NOT NULL CHECK (precio_unitario >= 0)
+);
+
+-- Tablas de apoyo
+CREATE TABLE IF NOT EXISTS historial_precios (
+  id BIGSERIAL PRIMARY KEY,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  precio_anterior NUMERIC(12,2) NOT NULL,
+  precio_nuevo NUMERIC(12,2) NOT NULL,
+  cambiado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS auditoria_ventas (
+  id BIGSERIAL PRIMARY KEY,
+  venta_id INTEGER NOT NULL REFERENCES ventas(id) ON DELETE CASCADE,
+  usuario TEXT NOT NULL,
+  registrado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS alertas_stock (
+  id BIGSERIAL PRIMARY KEY,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  nombre_producto TEXT NOT NULL,
+  mensaje TEXT NOT NULL,
+  generado_en TIMESTAMP NOT NULL DEFAULT NOW()
+);
+```
+
+
+## 📄 3. Inserción de Datos (insert.sql)
 Cada entidad debe contener al menos 15 registros.
 Datos representativos y realistas.
 
+```sql
+===========SCRIPT PARA INSERTAR DATOS DE PRUEBA EN LA DB==============
+================================DDL===================================
 
-📄 4. Consultas SQL (queries.sql)
+INSERT INTO proveedores (nombre) VALUES
+('Proveedor Global S.A.'),
+('Importadora del Norte'),
+('Tech Supplies Inc.'),
+('Distribuciones López'),
+('Comercial Eléctrica Martínez');
+
+
+INSERT INTO productos (nombre, categoria, precio, stock, proveedor_id) VALUES
+('Laptop HP 15"', 'Electrónica', 750.00, 20, 1),
+('Mouse Inalámbrico Logitech', 'Electrónica', 25.50, 100, 2),
+('Teclado Mecánico Redragon', 'Electrónica', 55.00, 50, 2),
+('Monitor Samsung 24"', 'Electrónica', 130.00, 30, 1),
+('Disco Duro Externo 1TB', 'Almacenamiento', 70.00, 45, 3),
+('Memoria USB 64GB', 'Almacenamiento', 15.99, 150, 3),
+('Router TP-Link', 'Redes', 45.00, 35, 4),
+('Cable HDMI 2m', 'Accesorios', 10.00, 200, 5),
+('Smartphone Samsung A24', 'Telefonía', 220.00, 25, 1),
+('Impresora Epson EcoTank', 'Impresoras', 180.00, 12, 4),
+('Toner HP 85A', 'Consumibles', 65.00, 60, 2),
+('Tablet Lenovo 10"', 'Electrónica', 150.00, 18, 1),
+('Webcam Full HD', 'Accesorios', 35.00, 40, 5),
+('Micrófono USB', 'Accesorios', 28.00, 55, 5),
+('Auriculares Bluetooth', 'Accesorios', 60.00, 70, 3);
+
+
+INSERT INTO clientes (nombre, correo, telefono, estado) VALUES
+('María González', 'maria.gonzalez@example.com', '123456789', 'activo'),
+('Carlos Pérez', 'carlos.perez@example.com', '987654321', 'activo'),
+('Ana Torres', 'ana.torres@example.com', '1122334455', 'inactivo'),
+('Luis Fernández', 'luis.fernandez@example.com', '6677889900', 'activo'),
+('Carmen Ramírez', 'carmen.ramirez@example.com', '5566778899', 'activo'),
+('José Castillo', 'jose.castillo@example.com', '4433221100', 'activo'),
+('Lucía Méndez', 'lucia.mendez@example.com', NULL, 'inactivo'),
+('Miguel Díaz', 'miguel.diaz@example.com', '123123123', 'activo'),
+('Paula Rivas', 'paula.rivas@example.com', '321321321', 'activo'),
+('Andrés Salinas', 'andres.salinas@example.com', NULL, 'activo');
+
+
+INSERT INTO ventas (cliente_id, fecha) VALUES
+(1, '2025-09-04 09:15:00'),
+(2, '2025-09-04 09:20:00'),
+(4, '2025-09-04 09:30:00'),
+(5, '2025-09-04 09:40:00'),
+(6, '2025-09-04 09:45:00'),
+(8, '2025-09-04 10:00:00'),
+(9, '2025-09-04 10:05:00'),
+(10, '2025-09-04 10:10:00'),
+(1, '2025-09-04 10:15:00'),
+(3, '2025-09-04 10:25:00');
+
+
+INSERT INTO ventas_detalle (venta_id, producto_id, cantidad, precio_unitario) VALUES
+(1, 1, 1, 750.00),
+(1, 2, 2, 25.50),
+(2, 4, 1, 130.00),
+(3, 3, 1, 55.00),
+(4, 5, 1, 70.00),
+(4, 6, 3, 15.99),
+(5, 7, 1, 45.00),
+(6, 9, 1, 220.00),
+(7, 10, 1, 180.00),
+(7, 11, 2, 65.00),
+(8, 12, 1, 150.00),
+(9, 14, 1, 28.00),
+(9, 15, 2, 60.00),
+(10, 13, 1, 35.00),
+(10, 8, 1, 10.00);
+
+
+INSERT INTO historial_precios (producto_id, precio_anterior, precio_nuevo, cambiado_en) VALUES
+(1, 700.00, 750.00, '2025-09-03 15:00:00'),
+(3, 50.00, 55.00, '2025-09-02 10:30:00'),
+(5, 65.00, 70.00, '2025-09-01 14:45:00'),
+(9, 210.00, 220.00, '2025-08-30 12:00:00'),
+(14, 25.00, 28.00, '2025-09-03 16:20:00');
+
+
+INSERT INTO auditoria_ventas (venta_id, usuario, registrado_en) VALUES
+(1, 'admin', '2025-09-04 09:15:10'),
+(2, 'admin', '2025-09-04 09:20:05'),
+(3, 'vendedor1', '2025-09-04 09:30:10'),
+(4, 'vendedor1', '2025-09-04 09:40:10'),
+(5, 'vendedor2', '2025-09-04 09:45:30'),
+(6, 'admin', '2025-09-04 10:00:10'),
+(7, 'admin', '2025-09-04 10:05:15'),
+(8, 'vendedor2', '2025-09-04 10:10:10'),
+(9, 'vendedor1', '2025-09-04 10:15:20'),
+(10, 'admin', '2025-09-04 10:25:00');
+
+
+INSERT INTO alertas_stock (producto_id, nombre_producto, mensaje, generado_en) VALUES
+(10, 'Impresora Epson EcoTank', 'Stock bajo: quedan menos de 15 unidades', '2025-09-04 08:00:00'),
+(1, 'Laptop HP 15"', 'Stock bajo: quedan menos de 25 unidades', '2025-09-04 08:30:00'),
+(9, 'Smartphone Samsung A24', 'Stock crítico: menos de 10 unidades', '2025-09-04 09:00:00');
+
+```
+
+## 📄 4. Consultas SQL (queries.sql)
 Incluir 6 consultas avanzadas:
 
-1️⃣ Listar los productos con stock menor a 5 unidades.
+### 1️⃣ Listar los productos con stock menor a 5 unidades.
+```sql
+SELECT id, nombre, categoria, precio, stock, proveedor_id
+FROM productos
+WHERE stock < 5;
+--no hay productos que tengan un stock menor a 5--
+```
+### 2️⃣ Calcular ventas totales de un mes específico.
+```sql
+SELECT SUM (vd.cantidad * vd.precio_unitario) AS total_ventas
+FROM ventas v
+JOIN ventas_detalle vd ON v.id = vd.venta_id
+WHERE EXTRACT(YEAR FROM v.fecha) = 2025 AND EXTRACT(MONTH FROM v.fecha) = 09;
+```
+### 3️⃣ Obtener el cliente con más compras realizadas.
+```sql
+SELECT c.id, c.nombre COUNT(v.id) AS total_compras
+FROM clientes c
+JOIN ventas v ON c.id = v.cliente_id
+GROUP BY c.id
+ORDER BY total_compras DESC
+LIMIT 1;
 
-2️⃣ Calcular ventas totales de un mes específico.
+SELECT c.id, c.nombre, SUM(vd.cantidad * vd.precio_unitario) AS total_gastado
+FROM clientes c
+JOIN ventas v ON c.id = v.cliente_id
+JOIN ventas_detalle vd ON v.id = vd.venta_id
+GROUP BY c.id
+ORDER BY total_gastado DESC
+LIMIT 1;
+```
+### 4️⃣ Listar los productos más vendidos.
+```sql
+SELECT p.id, p.nombre, SUM(vd.cantidad) AS total_vendido
+FROM productos p
+JOIN ventas_detalle vd ON p.id = vd.producto_id
+GROUP BY p.id
+ORDER BY total_vendido DESC
+LIMIT 5;
+```
+### 5️⃣ Consultar ventas realizadas en un rango de fechas.
+```sql
+SELECT v.id, v.fecha, c.nombre AS cliente, SUM(vd.cantidad * vd.precio_unitario) AS total_venta
+FROM ventas v
+JOIN clientes c ON v.cliente_id = c.id
+JOIN ventas_detalle vd ON v.id = vd.venta_id
+WHERE v.fecha BETWEEN '2025-09-03 09:15:10' AND '2025-10-06 10:25:00'
+GROUP BY v.id, v.fecha, c.nombre
+ORDER BY v.fecha;
+```
+### 6️⃣ Identificar clientes que no han comprado en los últimos 6 meses.
+```sql
+SELECT c.id, c.nombre, c.correo
+FROM clientes c
+WHERE c.id NOT IN (
+  SELECT DISTINCT v.cliente_id
+  FROM ventas v
+  WHERE v.fecha >= (CURRENT_DATE - INTERVAL '6 months')
+);
+```
 
-3️⃣ Obtener el cliente con más compras realizadas.
 
-4️⃣ Listar los productos más vendidos.
-
-5️⃣ Consultar ventas realizadas en un rango de fechas.
-
-6️⃣ Identificar clientes que no han comprado en los últimos 6 meses.
-
-
-
-📄 5. Procedimiento Almacenado (procedure.sql)
+## 📄 5. Procedimiento Almacenado (procedure.sql)
 Un procedimiento almacenado para registrar una venta.
 Implementación de transacciones (COMMIT y ROLLBACK) para:
 Validar que el cliente exista.
 Verificar que el stock sea suficiente antes de procesar la venta.
 Si no hay stock suficiente, se hace un ROLLBACK para cancelar la venta.
 Si hay stock, se realiza un COMMIT para confirmar la transacción.
-
-
-📄 6. Documentación (README.md)
-El README.md debe incluir:
-
-Descripción del proyecto explicando su propósito y funcionalidad.
-Imagen del modelo E-R (modelo_er.png).
-Instrucciones detalladas para importar y ejecutar los archivos SQL en PostgreSQL.
-Descripción de cada script (db.sql, insert.sql, queries.sql, procedure.sql).
-Ejemplo de cómo ejecutar las consultas y el procedimiento almacenado en PostgreSQL.
-
 
 📂 Estructura del Repositorio
 📌 modelo_er.png → Imagen del modelo Entidad-Relación.
